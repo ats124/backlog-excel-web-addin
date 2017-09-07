@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Button, ButtonType } from 'office-ui-fabric-react';
 import { Header } from './header';
 import { HeroList, HeroListItem } from './hero-list';
+import { BacklogProjectSelector } from './backlog-project-selector';
 
 export interface AppProps {
     title: string;
@@ -52,11 +53,7 @@ export class App extends React.Component<AppProps, AppState> {
     render() {
         return (
             <div className='ms-welcome'>
-                <Header logo='assets/logo-filled.png' title={this.props.title} message='Welcome' />
-                <HeroList message='Discover what BacklogExcelWebAddin can do for you today!' items={this.state.listItems}>
-                    <p className='ms-font-l'>Modify the source files, then click <b>Run</b>.</p>
-                    <Button className='ms-welcome__action' buttonType={ButtonType.hero} icon='ChevronRight' onClick={this.click}>Run</Button>
-                </HeroList>
+                <BacklogProjectSelector />
             </div>
         );
     };
