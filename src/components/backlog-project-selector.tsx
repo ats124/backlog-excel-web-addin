@@ -129,12 +129,19 @@ export class BacklogProjectSelector extends React.Component<BacklogProjectSelect
 
     okApiKeyButtonClick = async () => {
         let { apiKeys, inputApiKeyName, inputHost, inputApiKey } = this.state;
-        apiKeys.push({ name: inputApiKeyName, host: inputHost, apiKey: inputApiKey });
+
+        // APIキー一覧を更新
+        var newApiKey: BacklogApiKey = { name: inputApiKeyName, host: inputHost, apiKey: inputApiKey };
+        apiKeys.push(newApiKey);
         Office.context.document.settings.set('backlog-api-keys', apiKeys);
         await Office.context.document.settings.saveAsync();
         
-        this.setState({ apiKeys });
+        // 追加したAPIキーを選択
+        this.setState({ apiKeys, selectedApiKey: newApiKey });
         this.closeDialog();
+
+        // プロジェクト再読込
+        this.reloadProjects(newApiKey);
     }
 
     deleteApiKeyButtonClick = async () => {
