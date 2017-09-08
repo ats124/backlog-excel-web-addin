@@ -1,42 +1,27 @@
 import * as React from 'react';
 import { Button, ButtonType } from 'office-ui-fabric-react';
 import { Header } from './header';
-import { HeroList, HeroListItem } from './hero-list';
-import { BacklogProjectSelector } from './backlog-project-selector';
+import { BacklogProjectSelector, BacklogApiKey, BacklogProject } from './backlog-project-selector';
 
 export interface AppProps {
     title: string;
 }
 
 export interface AppState {
-    listItems: HeroListItem[];
+    selectedApiKey: BacklogApiKey;
+    selectedProject: BacklogProject;
 }
 
 export class App extends React.Component<AppProps, AppState> {
     constructor(props, context) {
         super(props, context);
         this.state = {
-            listItems: []
+            selectedApiKey: null,
+            selectedProject: null
         };
     }
 
     componentDidMount() {
-        this.setState({
-            listItems: [
-                {
-                    icon: 'Ribbon',
-                    primaryText: 'Achieve more with Office integration'
-                },
-                {
-                    icon: 'Unlock',
-                    primaryText: 'Unlock features and functionality'
-                },
-                {
-                    icon: 'Design',
-                    primaryText: 'Create and visualize like a pro'
-                }
-            ]
-        });
     }
 
     click = async () => {
@@ -52,9 +37,7 @@ export class App extends React.Component<AppProps, AppState> {
 
     render() {
         return (
-            <div className='ms-welcome'>
-                <BacklogProjectSelector />
-            </div>
+            <BacklogProjectSelector onChanged={((apiKey, project) => this.setState({ selectedApiKey: apiKey, selectedProject: project })) } />
         );
     };
 };
