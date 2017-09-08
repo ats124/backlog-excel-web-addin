@@ -5,6 +5,19 @@ import { Dropdown, IDropdownOption, Dialog, DialogFooter, TextField, PrimaryButt
 export interface BacklogProject {
     projectId: number;
     name: string;
+    priorities: BacklogPriority[];
+    issueTypes: BacklogIssueType[];
+}
+
+export interface BacklogPriority {
+    id: number;
+    name: string;
+}
+
+export interface BacklogIssueType {
+    id: number;
+    name: string;
+    displayOrder: number;
 }
 
 export interface BacklogApiKey {
@@ -41,7 +54,7 @@ export class BacklogProjectSelector extends React.Component<BacklogProjectSelect
             inputApiKeyName: '',
             inputHost: '',
             inputApiKey: '',
-            firstLoadProjects: true
+            firstLoadProjects: true,
         }
     }
 
@@ -67,54 +80,6 @@ export class BacklogProjectSelector extends React.Component<BacklogProjectSelect
         // 最後の選択したAPIキーがある場合はプロジェクトを読み込む
         if (selectedApiKey != null) {
             this.reloadProjects(selectedApiKey);
-        }
-    }
-
-    reloadProjects(selectedApiKey: BacklogApiKey) {        
-        if (selectedApiKey != null) {
-            const backlog = new backlogjs.Backlog({ host: selectedApiKey.host, apiKey: selectedApiKey.apiKey });
-            backlog.getProjects().then(async data => {
-                var projects: BacklogProject[] = [];
-                for (var i = 0; i < data.length; i++) {
-                    projects.push({ projectId: data[i].id, name: data[i].name });
-                }
-
-                // 初回のプロジェクト読み込み時は設定から最後に選択したプロジェクトを選択する
-                var selectedProject: BacklogProject = null;
-                if (this.state.firstLoadProjects) {
-                    var lastSelectedProjectId = Office.context.document.settings.get('backlog-last-selected-project');
-                    if (lastSelectedProjectId != undefined) {
-                        selectedProject = projects.find(x => x.projectId == lastSelectedProjectId);
-                        if (selectedProject == undefined) selectedProject = null;
-                    }
-                    this.setState({firstLoadProjects: false});
-                }
-
-                // 最後に選択したプロジェクトを選択できなければ先頭のプロジェクトを選択
-                if (selectedProject == null && projects.length > 0) {
-                    selectedProject = projects[0];
-                }
-                
-                this.setState({ projects, selectedProject });
-                this.props.onChanged(selectedApiKey, selectedProject);
-
-                Office.context.document.settings.set('backlog-last-selected-project', selectedProject.projectId);
-                await Office.context.document.settings.saveAsync();         
-            }).catch(_ => {
-
-                // プロジェクト読み込みエラーの場合は一覧クリアと選択解除
-                this.setState({ projects: [] });
-                if (this.state.selectedProject != null) {
-                    this.setState({selectedProject: null});
-                    this.props.onChanged(selectedApiKey, null);
-                }
-            });
-        } else {
-            this.setState({ projects: [] });
-            if (this.state.selectedProject != null) {
-                this.setState({selectedProject: null});
-                this.props.onChanged(null, null);
-            }
         }
     }
 
@@ -159,20 +124,16 @@ export class BacklogProjectSelector extends React.Component<BacklogProjectSelect
         this.setState({ apiKeys, selectedApiKey: null, projects: [], selectedProject: null });
         this.props.onChanged(null, null);
     }
- 
-    closeDialog() {
-        this.setState({ isApiKeyDialogOpen: false });
-    }
 
     apiKeyDropdownOnChanged = async(_, index) => {
         var selectedApiKey = this.state.apiKeys[index];
         this.setState({ selectedApiKey, selectedProject:null, projects: [] });
         this.props.onChanged(selectedApiKey, null);
-        
-        this.reloadProjects(selectedApiKey);
 
         Office.context.document.settings.set('backlog-last-selected-apikey', selectedApiKey.name);
         await Office.context.document.settings.saveAsync();
+        
+        await this.reloadProjects(selectedApiKey);
     }
 
     projectDropdownOnChanged = async(_, index) => {
@@ -184,9 +145,64 @@ export class BacklogProjectSelector extends React.Component<BacklogProjectSelect
         Office.context.document.settings.set('backlog-last-selected-project', selectedProject.projectId);
         await Office.context.document.settings.saveAsync();
     }
+ 
+    closeDialog() {
+        this.setState({ isApiKeyDialogOpen: false });
+    }
+
+    async reloadProjects(selectedApiKey: BacklogApiKey) {        
+        if (selectedApiKey != null) {
+            const backlog = new backlogjs.Backlog({ host: selectedApiKey.host, apiKey: selectedApiKey.apiKey });
+            try {
+                const prioriteisData = await backlog.getPriorities();
+                const priorities: BacklogPriority[] = prioriteisData.map((x => {x.id, x.name}));
+                const projectsData = await backlog.getProjects();
+                var projects: BacklogProject[] = [];
+                for (var i = 0; i < projectsData.length; i++) {
+                    const issueTypes: BacklogIssueType[] = (await backlog.getIssueTypes(projectsData[i].id)).map((x => {x.id, x.name, x.displayOrder}));
+                    projects.push({ projectId: projectsData[i].id, name: projectsData[i].name, priorities, issueTypes });
+                }
+
+                // 初回のプロジェクト読み込み時は設定から最後に選択したプロジェクトを選択する
+                var selectedProject: BacklogProject = null;
+                if (this.state.firstLoadProjects) {
+                    var lastSelectedProjectId = Office.context.document.settings.get('backlog-last-selected-project');
+                    if (lastSelectedProjectId != undefined) {
+                        selectedProject = projects.find(x => x.projectId == lastSelectedProjectId);
+                        if (selectedProject == undefined) selectedProject = null;
+                    }
+                    this.setState({firstLoadProjects: false});
+                }
+
+                // 最後に選択したプロジェクトを選択できなければ先頭のプロジェクトを選択
+                if (selectedProject == null && projects.length > 0) {
+                    selectedProject = projects[0];
+                }
+                
+                this.setState({ projects, selectedProject });
+                this.props.onChanged(selectedApiKey, selectedProject);
+
+                Office.context.document.settings.set('backlog-last-selected-project', selectedProject.projectId);
+                await Office.context.document.settings.saveAsync();         
+                
+            } catch (e) {
+                this.clearProjects();                
+            }
+        } else {
+            this.clearProjects();
+        }
+    }
+
+    clearProjects() {
+        this.setState({ projects: [] });
+        if (this.state.selectedProject != null) {
+            this.setState({selectedProject: null});
+            this.props.onChanged(null, null);
+        }
+    }
 
     render() {
-        let {apiKeys, selectedApiKey, selectedProject, inputApiKeyName, inputHost, inputApiKey} = this.state;
+        let {apiKeys, selectedApiKey, selectedProject, inputApiKeyName, inputHost, inputApiKey, isChildren} = this.state;
 
         var keyItems: IDropdownOption[] = [];
         var selectedApiOptionKey: number = null;
