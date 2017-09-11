@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Checkbox, DefaultButton  } from 'office-ui-fabric-react';
 import { BacklogProjectSelector, BacklogApiKey, BacklogProject } from './backlog-project-selector';
-import * as backlogjs from 'backlog-js';
 
 export interface AppProps {
     title: string;
@@ -11,6 +10,7 @@ export interface AppState {
     selectedApiKey: BacklogApiKey;
     selectedProject: BacklogProject;
     isChildren: boolean;
+
 }
 
 export class App extends React.Component<AppProps, AppState> {
@@ -19,7 +19,7 @@ export class App extends React.Component<AppProps, AppState> {
         this.state = {
             selectedApiKey: null,
             selectedProject: null,
-            isChildren: false
+            isChildren: false,
         };
     }
 
@@ -27,49 +27,22 @@ export class App extends React.Component<AppProps, AppState> {
     }
 
     addIssuesButtonOnClick = async() => {
-        let { selectedApiKey, selectedProject, isChildren } = this.state;
+        await Excel.run(async ctx => {
+            var sourceRange = ctx.workbook.getSelectedRange().load("values, rowCount, columnCount");            
+            await ctx.sync();
 
-        Excel.run(function (ctx) {
-            // 選択された範囲に対するプロキシ オブジェクトを作成し、そのプロパティを読み込みます
-            var sourceRange = ctx.workbook.getSelectedRange().load("values, rowCount, columnCount");
-            
-            // キューに入れるコマンドを実行し、タスクの完了を示すために Promise を返します
-            return ctx.sync()
-                .then(function () {
-                    const backlog = new backlogjs.Backlog({host: selectedApiKey.host, apiKey: selectedApiKey.apiKey});
-                    for (var i = 0; i < sourceRange.rowCount; i++) {
-                        var params: backlogjs.Option.Issue.PostIssueParams = { projectId: selectedProject.projectId, summary: sourceRange.values[i][0], priorityId: 1 };
-                        if (sourceRange.columnCount > 1) {
-                            params.description = sourceRange.values[i][1];
-                        }
-                        backlog.postIssue(params);
-                    }
-                    backlogjs.Option.Issue
-                    var highestRow = 0;
-                    var highestCol = 0;
-                    var highestValue = sourceRange.values[0][0];
+            var selectedValues: any[][] = new Array();
+            for (var i = 0; i < sourceRange.rowCount; i++) {
+                selectedValues[i] = new Array();
+                for (var j = 0; j < sourceRange.columnCount; j++) {
+                    selectedValues[i][j] = sourceRange.values[i][j];
+                }
+            }
 
-                    // セルを検索して強調表示します
-                    for (var i = 0; i < sourceRange.rowCount; i++) {
-                        for (var j = 0; j < sourceRange.columnCount; j++) {
-                            if (!isNaN(sourceRange.values[i][j]) && sourceRange.values[i][j] > highestValue) {
-                                highestRow = i;
-                                highestCol = j;
-                                highestValue = sourceRange.values[i][j];
-                            }
-                        }
-                    }
-
-                    cellToHighlight = sourceRange.getCell(highestRow, highestCol);
-                    sourceRange.worksheet.getUsedRange().format.fill.clear();
-                    sourceRange.worksheet.getUsedRange().format.font.bold = false;
-
-                    // セルを強調表示
-                    cellToHighlight.format.fill.color = "orange";
-                    cellToHighlight.format.font.bold = true;
-                })
-                .then(ctx.sync);
-    })
+            console.log('selectedValues', selectedValues);
+            localStorage.setItem('selected-values', JSON.stringify(selectedValues));
+            Office.context.ui.displayDialogAsync('https://localhost:3000/addIssueDialog.html', { width: 50, height: 50, xFrameDenySafe: true });  
+        });
     }
         
     render() {

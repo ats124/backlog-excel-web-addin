@@ -24,6 +24,9 @@ const entry = {
         'webpack-dev-server/client?http://localhost:3000',
         'webpack/hot/only-dev-server',
         './main.tsx',
+    ],
+    addIssueDialog: [
+        './addIssueDialogMain.tsx',
     ]
 };
 
@@ -87,9 +90,14 @@ const WEBPACK_PLUGINS = [
             }
         }
     }),
+    // new webpack.optimize.CommonsChunkPlugin({
+    //     name: ['vendor', 'app'],
+    //     minChunks: 3
+    // })
     new webpack.optimize.CommonsChunkPlugin({
-        name: ['vendor', 'app'],
-        minChunks: 2
+        name: 'vendor',
+        chunks: ['app', 'addIssueDialog'],
+        minChunks: 3
     })
 ];
 
@@ -111,6 +119,12 @@ module.exports = {
             filename: 'index.html',
             template: 'index.html',
             chunks: ['app', 'vendor', 'polyfills']
+        }),
+        new HtmlWebpackPlugin({
+            title: 'BacklogExcelWebAddin',
+            filename: 'addIssueDialog.html',
+            template: 'addIssueDialog.html',
+            chunks: ['addIssueDialog', 'vendor', 'polyfills']
         }),
         new CheckerPlugin(),
         new CopyWebpackPlugin([
