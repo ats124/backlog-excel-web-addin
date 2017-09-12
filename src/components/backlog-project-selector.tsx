@@ -201,7 +201,7 @@ export class BacklogProjectSelector extends React.Component<BacklogProjectSelect
     }
 
     render() {
-        let {apiKeys, selectedApiKey, selectedProject, inputApiKeyName, inputHost, inputApiKey, isChildren} = this.state;
+        let { apiKeys, selectedApiKey, selectedProject, inputApiKeyName, inputHost, inputApiKey } = this.state;
 
         var keyItems: IDropdownOption[] = [];
         var selectedApiOptionKey: number = null;
