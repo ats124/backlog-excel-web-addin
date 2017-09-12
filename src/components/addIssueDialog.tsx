@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { PrimaryButton, DefaultButton } from 'office-ui-fabric-react';
+import * as update from 'immutability-helper'
+import { PrimaryButton, DefaultButton, Dropdown, IDropdownOption } from 'office-ui-fabric-react';
 import { BacklogProject, BacklogApiKey } from './backlog-project-selector';
 import * as backlogjs from 'backlog-js';
 
@@ -18,6 +19,8 @@ export interface AddIssueDialogProps {
 
 export interface AddIssueDialogState {
     issues: backlogjs.Option.Issue.PostIssueParams[];
+    issueTypeOptions: IDropdownOption[];
+    priorityOptions: IDropdownOption[];
 }
 
 export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssueDialogState> {
@@ -32,8 +35,18 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
             issueTypeId: selectedProject.issueTypes[0].id,
         }));
 
+        let issueTypeOptions: IDropdownOption[] = selectedProject.issueTypes.map(x => ({
+            key: x.id,
+            text: x.name
+        }));
+
+        let priorityOptions: IDropdownOption[] = selectedProject.priorities.map(x => ({
+            key: x.id,
+            text: x.name
+        }));
+
         this.state = {
-            issues
+            issues, issueTypeOptions, priorityOptions
         };
     }
 
@@ -41,7 +54,7 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
     }
         
     render() {
-        let { issues } = this.state;
+        let { issues, issueTypeOptions, priorityOptions } = this.state;
         return (
             <div>
                 <table className='ms-Table'>
@@ -54,12 +67,25 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
                         </tr>
                     </thead>
                     <tbody>
-                        {issues.map(issue => 
+                        {issues.map((issue, index) => 
                         <tr>
-                            <td></td>
+                            <td>
+                                <Dropdown 
+                                    options={issueTypeOptions} 
+                                    selectedKey={issue.issueTypeId} 
+                                    onChanged={(item) => {
+                                        console.log(item.key);
+                                        this.setState({ issues: update(this.state.issues, {[index]: {issueTypeId: {$set: item.key}}}) })
+                                    }}/>
+                            </td>
                             <td>{issue.summary}</td>
                             <td>{issue.description}</td>
-                            <td></td>
+                            <td>
+                                <Dropdown 
+                                    options={priorityOptions} 
+                                    selectedKey={issue.priorityId} 
+                                    onChanged={(item) => this.setState({ issues: update(this.state.issues, {[index]: {priorityId: {$set: item.key}}}) })}/>
+                            </td>
                         </tr>)}
                     </tbody>
                 </table>
