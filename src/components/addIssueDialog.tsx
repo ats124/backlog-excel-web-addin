@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as update from 'immutability-helper'
-import { PrimaryButton, DefaultButton, Dropdown, IDropdownOption, DetailsList, IColumn, DetailsListLayoutMode, SelectionMode } from 'office-ui-fabric-react';
+import { PrimaryButton, DefaultButton, Dropdown, IDropdownOption, DetailsList, IColumn, DetailsListLayoutMode, SelectionMode, TextField } from 'office-ui-fabric-react';
 import { BacklogProject, BacklogApiKey } from './backlog-project-selector';
 import * as backlogjs from 'backlog-js';
 
@@ -75,9 +75,7 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
                     <Dropdown 
                         options={priorityOptions} 
                         selectedKey={item.priorityId} 
-                        onChanged={(item) => 
-                            this.setState({ issues: update(this.state.issues, {[index]: {priorityId: {$set: item.key}}}) })
-                        }
+                        onChanged={ item => this.setState({ issues: update(this.state.issues, { [index]: { priorityId: { $set: item.key }}})}) }
                     />
             },                    
             {
@@ -87,7 +85,10 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
                 minWidth: 200,
                 maxWidth: 300,
                 data: 'string',
-                onRender: (item) => <span data-is-focusable={ true }>{ item.summary }</span>
+                onRender: (item, index) => 
+                    <TextField 
+                        value={ item.summary } 
+                        onChanged={ newValue => this.setState({ issues: update(this.state.issues, { [index]: { summary: { $set: newValue }}})}) } />
             },
             {
                 key: 'column4',
@@ -96,7 +97,11 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
                 minWidth: 300,
                 maxWidth: 400,
                 data: 'string',
-                onRender: (item) => <span data-is-focusable={ true }>{ item.description }</span>
+                onRender: (item, index) => 
+                <TextField 
+                    multiline={ true }
+                    value={ item.description }
+                    onChanged={ newValue => this.setState({ issues: update(this.state.issues, { [index]: { description: { $set: newValue }}})}) } />
             }
         ];
 
