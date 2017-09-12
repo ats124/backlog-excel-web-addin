@@ -18,6 +18,10 @@ const build = (() => {
     };
 })();
 
+const baseUrl = process.env.NODE_ENV == '' 
+    ? 'https://ats124.github.io/backlog-excel-web-addin/app'
+    : 'https://localhost:3000';
+
 const entry = {
     vendor: './vendor.ts',
     app: [
@@ -77,7 +81,8 @@ const WEBPACK_PLUGINS = [
     new webpack.DefinePlugin({
         ENVIRONMENT: JSON.stringify({
             build: build
-        })
+        }),
+        __BASE_URL__: JSON.stringify(baseUrl),
     }),
     new webpack.LoaderOptionsPlugin({
         options: {
@@ -90,10 +95,6 @@ const WEBPACK_PLUGINS = [
             }
         }
     }),
-    // new webpack.optimize.CommonsChunkPlugin({
-    //     name: ['vendor', 'app'],
-    //     minChunks: 3
-    // })
     new webpack.optimize.CommonsChunkPlugin({
         name: 'vendor',
         chunks: ['app', 'addIssueDialog'],

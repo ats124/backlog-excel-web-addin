@@ -3,6 +3,8 @@ import { Label, DefaultButton } from 'office-ui-fabric-react';
 import { BacklogProjectSelector, BacklogApiKey, BacklogProject } from './backlog-project-selector';
 import { ChildParentType, AddIssueDialogProps } from './addIssueDialog';
 
+declare var __BASE_URL__: string;
+
 export interface AppProps {
     title: string;
 }
@@ -44,7 +46,7 @@ export class App extends React.Component<AppProps, AppState> {
             const props: AddIssueDialogProps = { selectedApiKey, selectedProject, childParentType, selectedValues };
             localStorage.setItem('add-issue-dialog-params', JSON.stringify(props));
             Office.context.ui.displayDialogAsync(
-                'https://localhost:3000/addIssueDialog.html', 
+                __BASE_URL__ + '/addIssueDialog.html', 
                 { width: 50, height: 50, xFrameDenySafe: true }, 
                 asyncResult => { 
                     const dialog = asyncResult.value;
