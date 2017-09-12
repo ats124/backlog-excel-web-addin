@@ -1,34 +1,50 @@
 import * as React from 'react';
-import { Checkbox, DefaultButton  } from 'office-ui-fabric-react';
+import { PrimaryButton, DefaultButton } from 'office-ui-fabric-react';
+import { BacklogProject, BacklogApiKey } from './backlog-project-selector';
+import * as backlogjs from 'backlog-js';
+
+export enum ChildParentType {
+    Parents,
+    Children,
+    FirstParentAndChildren
+}
 
 export interface AddIssueDialogProps {
+    childParentType: ChildParentType;
+    selectedApiKey: BacklogApiKey;
+    selectedProject: BacklogProject;
+    selectedValues: any[][];
 }
 
 export interface AddIssueDialogState {
-    selectedValues: any[][];
+    issues: backlogjs.Option.Issue.PostIssueParams[];
 }
 
 export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssueDialogState> {
     constructor(props, context) {
         super(props, context);
+        let {selectedProject, selectedValues} = this.props;
+        var issues: backlogjs.Option.Issue.PostIssueParams[] = selectedValues.map(row => ({
+            projectId: selectedProject.projectId,
+            summary: row[0],
+            description: row.length > 1 ? row[1] : '',
+            priorityId: selectedProject.priorities[0].id,
+            issueTypeId: selectedProject.issueTypes[0].id,
+        }));
+
         this.state = {
-            selectedValues: new Array()
+            issues
         };
     }
 
     componentDidMount() {
-        var selectedValues: any[][] = JSON.parse(localStorage.getItem('selected-values'));
-        console.log('selected-values', selectedValues.length);
-        this.setState({ selectedValues });
     }
         
     render() {
-        let { selectedValues } = this.state;
-        for (var i = 0; i < selectedValues.length; i++) {
-        }
+        let { issues } = this.state;
         return (
             <div>
-                <table>
+                <table className='ms-Table'>
                     <thead>
                         <tr>
                             <th>種別</th>
@@ -38,15 +54,19 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
                         </tr>
                     </thead>
                     <tbody>
-                        {selectedValues.map(row => 
+                        {issues.map(issue => 
                         <tr>
                             <td></td>
-                            <td>{row[0]}</td>
-                            <td>{row.length > 1 ? row[1]: ''}</td>
+                            <td>{issue.summary}</td>
+                            <td>{issue.description}</td>
                             <td></td>
                         </tr>)}
                     </tbody>
                 </table>
+                <footer className='ms-u-textAlignRight'>
+                    <PrimaryButton>登録</PrimaryButton>
+                    <DefaultButton>キャンセル</DefaultButton>
+                </footer>
             </div>
         );
     };

@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { Checkbox, DefaultButton  } from 'office-ui-fabric-react';
+import { Label, DefaultButton } from 'office-ui-fabric-react';
 import { BacklogProjectSelector, BacklogApiKey, BacklogProject } from './backlog-project-selector';
+import { ChildParentType, AddIssueDialogProps } from './addIssueDialog';
 
 export interface AppProps {
     title: string;
@@ -9,8 +10,7 @@ export interface AppProps {
 export interface AppState {
     selectedApiKey: BacklogApiKey;
     selectedProject: BacklogProject;
-    isChildren: boolean;
-
+    childParentType: ChildParentType;
 }
 
 export class App extends React.Component<AppProps, AppState> {
@@ -19,7 +19,7 @@ export class App extends React.Component<AppProps, AppState> {
         this.state = {
             selectedApiKey: null,
             selectedProject: null,
-            isChildren: false,
+            childParentType: ChildParentType.Parents,
         };
     }
 
@@ -27,6 +27,8 @@ export class App extends React.Component<AppProps, AppState> {
     }
 
     addIssuesButtonOnClick = async() => {
+        let { selectedApiKey, selectedProject, childParentType } = this.state;
+
         await Excel.run(async ctx => {
             var sourceRange = ctx.workbook.getSelectedRange().load("values, rowCount, columnCount");            
             await ctx.sync();
@@ -39,21 +41,27 @@ export class App extends React.Component<AppProps, AppState> {
                 }
             }
 
-            console.log('selectedValues', selectedValues);
-            localStorage.setItem('selected-values', JSON.stringify(selectedValues));
+            const props: AddIssueDialogProps = { selectedApiKey, selectedProject, childParentType, selectedValues };
+            localStorage.setItem('add-issue-dialog-params', JSON.stringify(props));
             Office.context.ui.displayDialogAsync('https://localhost:3000/addIssueDialog.html', { width: 50, height: 50, xFrameDenySafe: true });  
         });
     }
-        
+
     render() {
-        let { selectedProject, isChildren } = this.state;
+        let { selectedProject, childParentType } = this.state;
+        const childParentTypeRadios = [
+            { type: ChildParentType.Parents, text: '親課題として登録する' },
+            { type: ChildParentType.Children, text: '子課題として登録する' },
+            { type: ChildParentType.FirstParentAndChildren, text: '子課題として登録する(先頭を親課題とする)' },
+        ].map(x => <div><label><input type="radio" value={x.type} checked={childParentType == x.type} onChange={() => this.setState({ childParentType: x.type })} />{x.text}</label></div>);
+        
         return (
             <div>
                 <BacklogProjectSelector onChanged={((apiKey, project) => this.setState({ selectedApiKey: apiKey, selectedProject: project })) } />
-                <Checkbox 
-                    label='子課題として登録する'
-                    checked={isChildren} 
-                    onChange={ ((_, isChecked) => this.setState({ isChildren: isChecked })) } />
+                <div>
+                    <Label>親子関係</Label>
+                    {childParentTypeRadios}
+                </div>
                 <DefaultButton onClick={this.addIssuesButtonOnClick} disabled={selectedProject == null}>選択範囲を課題として登録</DefaultButton>
             </div>
         );

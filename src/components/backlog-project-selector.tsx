@@ -154,12 +154,11 @@ export class BacklogProjectSelector extends React.Component<BacklogProjectSelect
         if (selectedApiKey != null) {
             const backlog = new backlogjs.Backlog({ host: selectedApiKey.host, apiKey: selectedApiKey.apiKey });
             try {
-                const prioriteisData = await backlog.getPriorities();
-                const priorities: BacklogPriority[] = prioriteisData.map((x => {x.id, x.name}));
+                const priorities: BacklogPriority[] = (await backlog.getPriorities()).map(x => ({id: x.id, name: x.name}));
                 const projectsData = await backlog.getProjects();
                 var projects: BacklogProject[] = [];
                 for (var i = 0; i < projectsData.length; i++) {
-                    const issueTypes: BacklogIssueType[] = (await backlog.getIssueTypes(projectsData[i].id)).map((x => {x.id, x.name, x.displayOrder}));
+                    const issueTypes: BacklogIssueType[] = (await backlog.getIssueTypes(projectsData[i].id)).map(x => ({id: x.id, name: x.name, displayOrder:x.displayOrder}));
                     projects.push({ projectId: projectsData[i].id, name: projectsData[i].name, priorities, issueTypes });
                 }
 
