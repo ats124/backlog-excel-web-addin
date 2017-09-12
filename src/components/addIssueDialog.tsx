@@ -144,6 +144,27 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
     componentDidMount() {
     }
 
+    async registButtonOnClick() {
+        const { selectedApiKey, childParentType } = this.props;
+        const { issues } = this.state;
+        const backlog = new backlogjs.Backlog({ host:selectedApiKey.host, apiKey: selectedApiKey.apiKey });
+
+        // 子課題登録する場合は先に親課題を登録してidを取得し
+        // 子課題の親課題idをセットする
+        if (childParentType != ChildParentType.Parents) {
+            const parentIssue = await backlog.postIssue(issues.shift());
+            issues.forEach(x => x.parentIssueId = parentIssue.id);
+        }
+
+        await Promise.all(issues.map(async x => await backlog.postIssue(x)));
+        
+        Office.context.ui.messageParent(true);
+    }
+
+    cancelButtonOnClick() {
+        Office.context.ui.messageParent(false);
+    }
+
     render() {
         let { issues, issueDetailListCoumns, issueDetailListGroups } = this.state;
         return (
@@ -157,8 +178,8 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
                     groups={ issueDetailListGroups }
                 />
                 <footer className='ms-u-textAlignRight'>
-                    <PrimaryButton>登録</PrimaryButton>
-                    <DefaultButton>キャンセル</DefaultButton>
+                    <PrimaryButton onClick={this.registButtonOnClick.bind(this)}>登録</PrimaryButton>
+                    <DefaultButton onClick={this.cancelButtonOnClick.bind(this)}>キャンセル</DefaultButton>
                 </footer>
             </div>
         );

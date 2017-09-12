@@ -43,7 +43,18 @@ export class App extends React.Component<AppProps, AppState> {
 
             const props: AddIssueDialogProps = { selectedApiKey, selectedProject, childParentType, selectedValues };
             localStorage.setItem('add-issue-dialog-params', JSON.stringify(props));
-            Office.context.ui.displayDialogAsync('https://localhost:3000/addIssueDialog.html', { width: 50, height: 50, xFrameDenySafe: true });  
+            Office.context.ui.displayDialogAsync(
+                'https://localhost:3000/addIssueDialog.html', 
+                { width: 50, height: 50, xFrameDenySafe: true }, 
+                asyncResult => { 
+                    const dialog = asyncResult.value;
+                    dialog.addEventHandler(Office.EventType.DialogMessageReceived, dialogResult => {
+                        dialog.close();
+                        if (dialogResult) {
+                            
+                        }
+                    });
+                });  
         });
     }
 
