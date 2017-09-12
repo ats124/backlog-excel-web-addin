@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as update from 'immutability-helper'
-import { PrimaryButton, DefaultButton, Dropdown, IDropdownOption, DetailsList, IColumn, DetailsListLayoutMode, SelectionMode, TextField } from 'office-ui-fabric-react';
+import { PrimaryButton, DefaultButton, Dropdown, IDropdownOption, DetailsList, IColumn, IGroup, DetailsListLayoutMode, SelectionMode, TextField } from 'office-ui-fabric-react';
 import { BacklogProject, BacklogApiKey } from './backlog-project-selector';
 import * as backlogjs from 'backlog-js';
 
@@ -22,12 +22,13 @@ export interface AddIssueDialogState {
     issueTypeOptions: IDropdownOption[];
     priorityOptions: IDropdownOption[];
     issueDetailListCoumns: IColumn[];
+    issueDetailListGroups: IGroup[];
 }
 
 export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssueDialogState> {
     constructor(props, context) {
         super(props, context);
-        let {selectedProject, selectedValues} = this.props;
+        let { selectedProject, selectedValues, childParentType } = this.props;
 
         var issues: backlogjs.Option.Issue.PostIssueParams[] = selectedValues.map(row => ({
             projectId: selectedProject.projectId,
@@ -105,16 +106,46 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
             }
         ];
 
+        // 先頭が親課題でない子課題登録の場合は親課題用の空issueを先頭に挿入する
+        if (childParentType == ChildParentType.Children) {
+            issues.unshift({
+                projectId: selectedProject.projectId,
+                summary: '',
+                description: '',
+                priorityId: selectedProject.priorities[0].id,
+                issueTypeId: selectedProject.issueTypes[0].id,
+            });
+        }
+
+        // 子課題登録する場合はグループを作る
+        let issueDetailListGroups: IGroup[] = null;
+        if (childParentType == ChildParentType.Children || childParentType == ChildParentType.FirstParentAndChildren && issues.length > 1) {
+            issueDetailListGroups = [
+                {
+                    key: 'parent',
+                    name: '親課題',
+                    startIndex: 0,
+                    count: 1,
+                },
+                {
+                    key: 'children',
+                    name: '子課題',
+                    startIndex: 1,
+                    count: issues.length - 1,
+                },
+            ];
+        }
+
         this.state = {
-            issues, issueTypeOptions, priorityOptions, issueDetailListCoumns
+            issues, issueTypeOptions, priorityOptions, issueDetailListCoumns, issueDetailListGroups
         };
     }
 
     componentDidMount() {
     }
-        
+
     render() {
-        let { issues, issueDetailListCoumns } = this.state;
+        let { issues, issueDetailListCoumns, issueDetailListGroups } = this.state;
         return (
             <div>
                 <DetailsList
@@ -123,6 +154,7 @@ export class AddIssueDialog extends React.Component<AddIssueDialogProps, AddIssu
                     layoutMode={ DetailsListLayoutMode.justified }
                     isHeaderVisible={ true }
                     selectionMode={ SelectionMode.none }
+                    groups={ issueDetailListGroups }
                 />
                 <footer className='ms-u-textAlignRight'>
                     <PrimaryButton>登録</PrimaryButton>
